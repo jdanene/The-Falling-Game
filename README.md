@@ -41,8 +41,8 @@
  fallers every `SHRINK-TICK` and `EXPAND-TICK` intervals. I'm using the remainder function to do this
 
 #### How I have been updating
-For each function `tick-tock` `click-click` and `render` I create functions to update each state variable. To make this more precise.
-The one I have finished have :alien: next to it. The one I am currently working on has :broken_heart: next to it. 
+For each function `tick-tock` `click-click` and `render` I create functions to update each state variable. To make this more precise
+the ones I have finished have :alien: next to them, and the one I am currently working on have :broken_heart: next to them. 
 
 **`tick-tock`**:broken_heart:  every tick of the clock everything needs to be updated 
 - `(make-paddle stretch direction image number)` :broken_heart:
@@ -89,15 +89,14 @@ The one I have finished have :alien: next to it. The one I am currently working 
 
 
 The current commit in this repo commments out the parts that are not ready. So a majority of the code is commented out. For the parts that are not commented out you can
-run test and they work just fine. I've just been creating functions for each individual component so far. So I first started out by creating
-functions to update `stretch, direction, image, number` for the paddle every tick. Then I moved on to creating a  function to update `score` every tick, then moved on to create functions to update the components
+run test and they work just fine. I've just been creating functions (or adjusting existing functions) for each individual component slowly uncommenting blocks of code iteratively.  So I first started out by creating
+functions to update `stretch, direction, image, number` for the paddle every tick. Then I moved on to creating a  functions to update `score` every tick, then moved on to creating functions to update the components
 that make up `list-of-faller` every tick. The next thing on my plate is to create a function that updates the entire paddle every tick by calling the functions I created for
-`stretch, direction, image, number`, and then I similarily  create a function that ties in the functions I created for `list-of-faller` to update the *entire* `list-of-faller` of fallers every tick. After that I
+`stretch, direction, image, number`, and then I similarily  I will create a function that ties in the functions I created for `list-of-faller` to update the *entire* `list-of-faller` every tick. After that I
 will tie all the functions I created together and create **`tick-tock`** to update the *entire world* every tick.
 
-When creating the individual components functions I make sure the input is only what I need. So for example for
-the function that updates the x-corrdinate of paddle every tick the input for this function is just the paddle-corr and the paddle-direction, `update-paddle\x: number string -> number`, and not the entire paddle object itself. Similarily,
-to update the direction the input for this function is paddle-corr, paddle-direction, and paddle-image: `update-paddle\direction: number string -> string`. I found that
-doing things this way and testing each iteration makes things easy barely any thinking albeit very boring.
+When creating the individual components functions I make sure the input is only what I need. For example, the input for the function that updates the x-corrdinate of the paddle every tick is just the paddle-corr and the paddle-direction, `update-paddle\x: number string -> number`, and not the entire paddle object itself. Similarily,
+to update the paddle-direction the input for this function is paddle-corr, paddle-direction, and paddle-image: `update-paddle\direction: number string -> string`. I found that
+doing things this way and testing each iteration makes things easy --barely any thinking--  very boring.
 
   
