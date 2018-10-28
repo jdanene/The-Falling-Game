@@ -110,7 +110,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (define TOUCH-MAIN-IMAGE (circle 10 "solid" "blue"))
 
 ;; Touch expanding faller Image
-(define EXPAND-FALLER-IMAGE (circle 10 "solid" "pink"))
+(define EXPAND-TOUCH-FALLER-IMAGE (circle 10 "solid" "pink"))
 
 ;; Touch shrink faller Image
 (define SHRINK-TOUCH-FALLER-IMAGE (circle 10 "solid" "red"))
@@ -152,7 +152,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 ;; update-paddle\x: number string -> number
 ;; Every tick moves the `paddle' left of right depending on `direction'.
-;; THIS UPDATE PADDLE-X
+;; THIS UPDATE: PADDLE-X
 ;; strategy: strucutral decomposition
 (define (update-paddle\x paddle-corr direction)
   (cond [(equal? direction "left")
@@ -170,9 +170,9 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (check-expect (update-paddle\x WORLD-WIDTH "right") WORLD-WIDTH)
 
 
-;; update-paddle\direction: number string -> string
+;; update-paddle\direction: number string image-> string
 ;; if the `paddle' is at the boundary change `direction' to the opposite direction.
-;;THIS UPDATES PADDLE-DIRECTION
+;;THIS UPDATES: PADDLE-DIRECTION
 ;; strategy: strucutral decomposition
 (define (update-paddle\direction paddle-corr direction paddle-image)
    (cond [(equal? paddle-corr (/ (image-width paddle-image) 2)) "right"]
@@ -185,80 +185,88 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (check-expect (update-paddle\direction  5 "left" PADDLE-IMAGE) "left")
 
 
-;; faller_equal_paddle?: number number -> boolean
+;; faller-equal-paddle?: paddle faller -> boolean
 ;; Returns #true if paddle hits the faller. 
 ;; strategy: structural decomp
-(define (faller_equal_paddle? paddle-corr faller)
-  (and (<= (- paddle-corr 25) (faller-x faller) (+ paddle-corr 25 )) (equal? (faller-y faller) (- WORLD-HEIGHT 12))))
+(define (faller-equal-paddle? paddle faller)
+  (let* ([paddle-width (image-width (paddle-image paddle))]
+         [paddle-height (image-height (paddle-image paddle))]
+         [paddle-width\half (/ paddle-width 2)])
+    (and (<= (- (paddle-x paddle) paddle-width\half) (faller-x faller) (+ (paddle-x paddle) paddle-width\half ))
+         (equal? (faller-y faller) (- WORLD-HEIGHT paddle-height)))))
 
 
-(check-expect (faller_equal_paddle? 10 (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) #true)
-(check-expect (faller_equal_paddle? 30 (make-faller FALLER-IMAGE 5  (- WORLD-HEIGHT 12))) #true)
-(check-expect (faller_equal_paddle? 30 (make-faller FALLER-IMAGE 4  (- WORLD-HEIGHT 12))) #false)
-(check-expect (faller_equal_paddle? 10 (make-faller FALLER-IMAGE 12  WORLD-HEIGHT)) #false)
-(check-expect (faller_equal_paddle? 10 (make-faller FALLER-IMAGE 12 10)) #false)
+(check-expect (faller-equal-paddle? (make-paddle "expand" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) #true)
+(check-expect (faller-equal-paddle? (make-paddle "expand" "left" PADDLE-IMAGE 30) (make-faller FALLER-IMAGE 5  (- WORLD-HEIGHT 12))) #true)
+(check-expect (faller-equal-paddle? (make-paddle "expand" "left" PADDLE-IMAGE 30) (make-faller FALLER-IMAGE 4  (- WORLD-HEIGHT 12))) #false)
+(check-expect (faller-equal-paddle? (make-paddle "expand" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 12  WORLD-HEIGHT)) #false)
+(check-expect (faller-equal-paddle? (make-paddle "expand" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 12 10)) #false)
 
-;;check-paddle\stretch: stretch faller number-> stretch
+
+;;check-paddle\stretch: paddle faller-> stretch
 ;; If (faller-x) hits the paddle then depending on the faller-image the paddle stretch is set to
 ;; either "expand" or "shrink"
 ;; Created to be used in the map function within the function `update-stretch'
 ;; strategy: structural decomposition
-(define (check-paddle\stretch stretch paddle-corr faller)
-  (if (faller_equal_paddle? paddle-corr faller)
-      (cond [(equal? (faller-image faller) FALLER-IMAGE)  stretch]
-            [(equal? (faller-image faller) EXPAND-FALLER-IMAGE) "expand"]
+(define (check-paddle\stretch paddle faller)
+  (if (faller-equal-paddle? paddle faller)
+      (cond [(equal? (faller-image faller) EXPAND-FALLER-IMAGE) "expand"]
             [(equal? (faller-image faller) SHRINK-FALLER-IMAGE) "shrink"]
-            [else stretch])
-      stretch))
+            [else (paddle-stretch paddle)])
+      (paddle-stretch paddle)))
 
-(check-expect (check-paddle\stretch "constant" 10 (make-faller EXPAND-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "expand")
-(check-expect (check-paddle\stretch "constant" 10 (make-faller SHRINK-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "shrink")
-(check-expect (check-paddle\stretch "constant" 10 (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
-(check-expect (check-paddle\stretch "constant" 10 (make-faller TOUCH-MAIN-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
-(check-expect (check-paddle\stretch "constant" 10 (make-faller EXPAND-TOUCH-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
-(check-expect (check-paddle\stretch "constant" 10 (make-faller SHRINK-TOUCH-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
-(check-expect (check-paddle\stretch "constant" 0 (make-faller SHRINK-TOUCH-FALLER-IMAGE 60  (- WORLD-HEIGHT 12))) "constant")
 
-;; update-paddle\stretch: list-of-fallers paddle-corr stretch -> stretch
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller EXPAND-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "expand")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller SHRINK-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "shrink")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller TOUCH-MAIN-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller EXPAND-TOUCH-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller SHRINK-TOUCH-FALLER-IMAGE 10  (- WORLD-HEIGHT 12))) "constant")
+(check-expect (check-paddle\stretch (make-paddle "constant" "left" PADDLE-IMAGE 0) (make-faller SHRINK-TOUCH-FALLER-IMAGE 60  (- WORLD-HEIGHT 12))) "constant")
+
+
+
+;; update-paddle\stretch: list-of-fallers paddle -> stretch
 ;; Goes through all the list-of-fallers checks if paddle hits one of the fallers,
 ;; if so updates stretch appropriately. Note the stretch variable changes iff the image associated with the
 ;; faller that was hit is a normal-image. (see definition)
-;; THIS UPDATES PADDLE-STRETCH
+;; THIS UPDATES: PADDLE-STRETCH
 ;; strategy: abstraction
-(define (update-paddle\stretch fallers paddle-corr stretch)
-  (let* ([stretch-list (map (lambda (f) (check-paddle\stretch stretch paddle-corr f)) fallers)]
-         [stretch-canidates (filter (lambda (s) (not (string=? s stretch))) stretch-list)])
+(define (update-paddle\stretch fallers paddle)
+  (let* ([stretch-list (map (lambda (f) (check-paddle\stretch paddle f)) fallers)]
+         [stretch-canidates (filter (lambda (s) (not (string=? s (paddle-stretch paddle)))) stretch-list)])
     (cond [(empty? stretch-canidates)
-           stretch]
+           (paddle-stretch paddle)]
           [else
            (car stretch-canidates)])))
+
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
                                  (make-faller FALLER-IMAGE 1 9)
                                  (make-faller FALLER-IMAGE  2 20)
                                  (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
                                  (make-faller EXPAND-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) 8 "constant") "expand")
+                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "expand")
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
                                  (make-faller FALLER-IMAGE 1 9)
                                  (make-faller FALLER-IMAGE  2 20)
                                  (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
                                  (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) 8 "constant") "shrink")
+                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "shrink")
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
                                  (make-faller FALLER-IMAGE 1 9)
                                  (make-faller FALLER-IMAGE  2 20)
                                  (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
                                  (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) 8 "constant") "constant")
+                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "constant")
 
 
 
 ;; update-paddle\image: image stretch -> image
 ;; Every tick either shrinks paddle or expands paddle depending on paddle-stretch
-;; THIS UPDATE PADDLE-IMAGE
+;; THIS UPDATE: PADDLE-IMAGE
 ;; strategy: strucutral decomposition
 (define (update-paddle\image paddle-img stretch)
  (let ([paddle-width (image-width paddle-img)])
@@ -287,51 +295,149 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 (check-expect (update-paddle\image (rectangle 50 12 "solid" "black")  "constant")
               (rectangle 50 12 "solid" "black"))
-         #|--------start: code to update paddle every tick --------|#
 
 
-;; add-score: number list-of-faller number -> number
-;; Updates the score of the game by cycling through every faller in `fallers and checking if the faller
-;; hits the paddle.
-;; THIS UPDATES THE SCORE
-;; strategy: structural decomp
-(define (add-score paddle-corr fallers score)
-  (local [;; get-score: list-of-faller number -> number
-          ;; For every faller in `fallers', if a faller hits the paddle then add +10 to the score.
-          ;; otherwise add +0 to the score. Essentially a sum recursive function
-          ;; strategy: structural decomposition
-          (define (get-score fallers  paddle-corr)
-            (cond [(equal? fallers '()) 0]
-                  [else (cond
-                          [(equal? (faller_equal_paddle?  paddle-corr (car fallers)) #true)
-                           (+ 10 (get-score (cdr fallers)  paddle-corr))]
-                          [else
-                           (+ 0 (get-score (cdr fallers)  paddle-corr))])]))]
-    (+ score (get-score fallers  paddle-corr))))
+;; update-paddle: paddle fallers -> paddle
+;; updates the paddle each tick
+;; THIS UPDATE: PADDLE
+;; strategy: function composition
+  (define (update-paddle paddle fallers)
+    (make-paddle
+     (update-paddle\stretch fallers paddle)
+     (update-paddle\direction (paddle-x paddle) (paddle-direction paddle) (paddle-image paddle))
+     (update-paddle\image (paddle-image paddle) (paddle-stretch paddle))
+     (update-paddle\x (paddle-x paddle) (paddle-direction paddle))))
+  
 
 
-(check-expect (add-score 8 (list (make-faller FALLER-IMAGE 0 0)
+;update x-corrdinate check 
+(check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 8)
+               (list (make-faller FALLER-IMAGE 0 0)
+                     (make-faller FALLER-IMAGE 1 9)
+                     (make-faller FALLER-IMAGE  2 20)
+                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "constant" "left" PADDLE-IMAGE 7))
+
+;makes sure stretch for "expand"
+(check-expect (update-paddle (make-paddle "expand" "left" PADDLE-IMAGE 8)
+               (list (make-faller FALLER-IMAGE 0 0)
+                     (make-faller FALLER-IMAGE 1 9)
+                     (make-faller FALLER-IMAGE  2 20)
+                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "expand" "left" (rectangle 51 12 "solid" "black") 7))
+
+;makes sure stretch for "shrink"
+(check-expect (update-paddle (make-paddle "shrink" "left" PADDLE-IMAGE 8)
+               (list (make-faller FALLER-IMAGE 0 0)
+                     (make-faller FALLER-IMAGE 1 9)
+                     (make-faller FALLER-IMAGE  2 20)
+                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "shrink" "left" (rectangle 49 12 "solid" "black") 7))
+
+
+(check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 8)
+                             (list (make-faller FALLER-IMAGE 0 0)
                                  (make-faller FALLER-IMAGE 1 9)
                                  (make-faller FALLER-IMAGE  2 20)
                                  (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) 0) 10)
+                                 (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
+              (make-paddle "shrink" "left" PADDLE-IMAGE 7))
 
-(check-expect (add-score 8 (list (make-faller FALLER-IMAGE 0 0)
+
+(check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 25)
+                             (list (make-faller FALLER-IMAGE 0 0)
                                  (make-faller FALLER-IMAGE 1 9)
                                  (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))) 20) 50)
+                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                 (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
+              (make-paddle "shrink" "right" PADDLE-IMAGE 24))
 
-(check-expect (add-score 8 (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE 2 20)
-                                 (make-faller FALLER-IMAGE 99 WORLD-HEIGHT)
-                                 (make-faller FALLER-IMAGE 6 WORLD-HEIGHT)
-                                 (make-faller FALLER-IMAGE 55 WORLD-HEIGHT)) 20) 20)
+
+  
+         #|--------end: code to update paddle every tick --------|#
+
+
+;; add-score: paddle list-of-faller number -> number
+;; Updates the score of the game by cycling through every faller in `fallers and checking if the faller
+;; hits the paddle.
+;; THIS UPDATES: SCORE
+;; strategy: structural decomp
+(define (add-score paddle fallers score)
+  (local [;; get-score: list-of-faller paddle -> number
+          ;; For every faller in `fallers', if a faller hits the paddle then add +10 to the score.
+          ;; otherwise add +0 to the score. Essentially a sum recursive function
+          ;; strategy: structural decomposition
+          (define (get-score fallers  paddle)
+            (cond [(equal? fallers '()) 0]
+                  [else (cond
+                          [(equal? (faller-equal-paddle?  paddle (car fallers)) #true)
+                           (+ 10 (get-score (cdr fallers)  paddle))]
+                          [else
+                           (+ 0 (get-score (cdr fallers)  paddle))])]))]
+    (+ score (get-score fallers  paddle))))
+
+
+(check-expect (add-score (make-paddle "constant" "left" PADDLE-IMAGE 8)
+                         (list (make-faller FALLER-IMAGE 0 0)
+                               (make-faller FALLER-IMAGE 1 9)
+                               (make-faller FALLER-IMAGE  2 20)
+                               (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                               (make-faller FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                               (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) 0) 10)
+
+(check-expect (add-score (make-paddle "constant" "left" PADDLE-IMAGE 8)
+                         (list (make-faller FALLER-IMAGE 0 0)
+                               (make-faller FALLER-IMAGE 1 9)
+                               (make-faller FALLER-IMAGE  2 20)
+                               (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))
+                               (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))
+                               (make-faller FALLER-IMAGE  8 (- WORLD-HEIGHT 12))) 20) 50)
+
+(check-expect (add-score (make-paddle "constant" "left" PADDLE-IMAGE 8)
+                         (list (make-faller FALLER-IMAGE 0 0)
+                               (make-faller FALLER-IMAGE 1 9)
+                               (make-faller FALLER-IMAGE 2 20)
+                               (make-faller FALLER-IMAGE 99 WORLD-HEIGHT)
+                               (make-faller FALLER-IMAGE 6 WORLD-HEIGHT)
+                               (make-faller FALLER-IMAGE 55 WORLD-HEIGHT)) 20) 20)
 
           #|--------start: code to update faller every tick --------|#
+
+;; create-faller\special: number -> list-of-faller
+;; Every tick mod EXPAND-TICK = 0  and tick mod SHRINK-TICK = 0, we add a expand ball and shrink
+;; ball to list-of-fallers
+(define (create-faller\special tick)
+  (let ([expand-indc (= (remainder tick EXPAND-TICK) 0)]
+        [shrink-indc (= (remainder tick SHRINK-TICK) 0)]) 
+    (cond [(and expand-indc shrink-indc)
+           ;We want the random number to be in [10, WORLD-WIDTH-10].
+           (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)
+                 (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
+          [expand-indc
+           (list (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
+          [shrink-indc
+           (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
+          [else '()])))
+
+
+(check-random (create-faller\special (* SHRINK-TICK EXPAND-TICK))
+              (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)
+                    (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
+
+(check-random (create-faller\special  SHRINK-TICK)
+              (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
+
+(check-random (create-faller\special  EXPAND-TICK)
+              (list (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
+
+(check-random (create-faller\special  7)
+              '())
+
 ;; not_false?: x -> boolean
 ;; returns true if a `val' is not equal to false.
 ;; strategy: strucutural decomposition
@@ -341,36 +447,36 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (check-expect (not_false? 5) #true)
 (check-expect (not_false? #false) #false)
 
-;; update-faller: number faller -> faller or boolean    
+;; update-faller: paddle faller -> faller or boolean    
 ;; checks if the ball is at the bottom of the screen [posn-y = WORLD-HEIGHT]. 
 ;; If so then returns #false. Checks if the faller equal paddle if so
 ;; then changes the faller image to TOUCH-MAIN-IMAGE and updates the faller
 ;; position. We are creating this function to apply it to filter. 
 ;; strategy: structural decomposition
-(define (update-faller paddle-corr faller)
+(define (update-faller paddle faller)
   (cond [(equal? (faller-y faller) (+ 10 WORLD-HEIGHT))
          #false]
-        [(and (faller_equal_paddle? paddle-corr faller)
+        [(and (faller-equal-paddle? paddle faller)
          (equal? (faller-image faller) FALLER-IMAGE))
          (make-faller TOUCH-MAIN-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
-        [(and (faller_equal_paddle? paddle-corr faller)
+        [(and (faller-equal-paddle? paddle faller)
          (equal? (faller-image faller) EXPAND-FALLER-IMAGE))
          (make-faller EXPAND-TOUCH-FALLER-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
-        [(and (faller_equal_paddle? paddle-corr faller)
+        [(and (faller-equal-paddle? paddle faller)
          (equal? (faller-image faller) SHRINK-FALLER-IMAGE))
          (make-faller SHRINK-TOUCH-FALLER-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
         [else
          (make-faller (faller-image faller) (faller-x faller) (+ (faller-y faller) 1))]))
 
 
-(check-expect (update-faller 10 (make-faller FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
+(check-expect (update-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
               (make-faller TOUCH-MAIN-IMAGE 10 (- WORLD-HEIGHT 11)))
-(check-expect (update-faller 10 (make-faller EXPAND-FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
+(check-expect (update-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller EXPAND-FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
               (make-faller EXPAND-TOUCH-FALLER-IMAGE 10 (- WORLD-HEIGHT 11)))
-(check-expect (update-faller 10 (make-faller SHRINK-FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
+(check-expect (update-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller SHRINK-FALLER-IMAGE 10 (- WORLD-HEIGHT 12)))
               (make-faller SHRINK-TOUCH-FALLER-IMAGE 10 (- WORLD-HEIGHT 11)))
-(check-expect (update-faller 10 (make-faller FALLER-IMAGE 10 (+ 10 WORLD-HEIGHT))) #false)
-(check-expect (update-faller 10 (make-faller FALLER-IMAGE 10 (- WORLD-HEIGHT 10)))
+(check-expect (update-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 10 (+ 10 WORLD-HEIGHT))) #false)
+(check-expect (update-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (make-faller FALLER-IMAGE 10 (- WORLD-HEIGHT 10)))
               (make-faller FALLER-IMAGE 10 (- WORLD-HEIGHT 9)))
 
 
@@ -386,48 +492,17 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                [else fallers])]
         [else fallers]))
 
-;; create-shrink/stretch: number -> list-of-faller
-;; Every tick mod EXPAND-TICK = 0  and tick mod SHRINK-TICK = 0, we add a expand ball and shrink
-;; ball to list-of-fallers
-(define (get-expand/shrink tick)
-  (let ([expand-indc (= (remainder tick EXPAND-TICK) 0)]
-        [shrink-indc (= (remainder tick SHRINK-TICK) 0)]) 
-    (cond [(and expand-indc shrink-indc)
-           ;We want the random number to be in [10, WORLD-WIDTH-10].
-           (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)
-                 (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
-          [expand-indc
-           (list (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
-          [shrink-indc
-           (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0))]
-          [else '()])))
-
-
-(check-random (get-expand/shrink  (* SHRINK-TICK EXPAND-TICK))
-              (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)
-                    (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
-
-(check-random (get-expand/shrink  SHRINK-TICK)
-              (list (make-faller SHRINK-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
-
-(check-random (get-expand/shrink  EXPAND-TICK)
-              (list (make-faller EXPAND-FALLER-IMAGE (+ 10 (random (- WORLD-WIDTH 20))) 0)))
-
-(check-random (get-expand/shrink  7)
-              '())
-
-
-
-#|
-;; update-all-faller: number list-of-faller -> list-of-faller
-;; Updates all the fallers position. For every posn in list-of-posn: `fallers' we either remove the
-;; posn from the list, or update posn-y -> (+ posn-y 1). Then we add a random faller to our
-;; list-of-posn via the `next-fallers' function
+;; update-all-faller: paddle list-of-faller -> list-of-faller
+;; Updates all the fallers positions and images.
+;; For every faller in list-of-faller, `fallers', we either remove the
+;; faller from the list if the faller is at the bottom of the screen,
+;; or update faller-y -> (+ faller-y 1), and if a faller happens to hit the paddle we also
+;; change the faller image. 
 ;; strategy: function decomposition
 (define (update-all-faller paddle fallers)
    (filter not_false? (map (lambda (f) (update-faller paddle f)) fallers)))
 
-(check-expect (update-all-faller 10 (list (make-faller FALLER-IMAGE 0 0)
+(check-expect (update-all-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (list (make-faller FALLER-IMAGE 0 0)
                                       (make-faller FALLER-IMAGE 1 1)
                                       (make-faller FALLER-IMAGE 2 2)
                                       (make-faller FALLER-IMAGE 3 3)
@@ -435,6 +510,8 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                       (make-faller FALLER-IMAGE 5 5)
                                       (make-faller FALLER-IMAGE 6 6)
                                       (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))
+                                      (make-faller EXPAND-FALLER-IMAGE 11  (- WORLD-HEIGHT 12))
+                                      (make-faller SHRINK-FALLER-IMAGE 12  (- WORLD-HEIGHT 12))
                                       (make-faller FALLER-IMAGE 8 (+ 10 WORLD-HEIGHT))
                                       (make-faller FALLER-IMAGE 9 (+ 10 WORLD-HEIGHT))))
 
@@ -445,15 +522,20 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                     (make-faller FALLER-IMAGE 4 5)
                     (make-faller FALLER-IMAGE 5 6)
                     (make-faller FALLER-IMAGE 6 7)
-                    (make-faller TOUCH-MAIN-IMAGE 10  (- WORLD-HEIGHT 11))))
+                    (make-faller TOUCH-MAIN-IMAGE 10  (- WORLD-HEIGHT 11))
+                    (make-faller EXPAND-TOUCH-FALLER-IMAGE 11  (- WORLD-HEIGHT 11))
+                    (make-faller SHRINK-TOUCH-FALLER-IMAGE 12  (- WORLD-HEIGHT 11))))
 (check-expect (update-all-faller  10 '())
               '())
 
-;; next-fallers: number list-of-faller -> list-of-faller
-;; Update faller positions
-;; strategy: Function Decomposition. Note we cannot test because of random number.
-(define (next-fallers paddle fallers)
-  (add-faller\random (update-all-faller paddle fallers)))
+;; next-fallers: paddle list-of-faller number-> list-of-faller
+;; Calls the function `update-all-faller' to update all faller position and faller images. Then
+;; calls add-faller\random to add a normal faller to our list of fallers.
+;; Then appends the special fallers to this list
+;; THIS FUNCTION UPDATES: FALLERS
+;; strategy: Function Composiiton. Note we cannot test because of random number.
+(define (next-fallers paddle fallers tick)
+  (append (add-faller\random (update-all-faller paddle fallers)) (create-faller\special tick)))
 
 
 
@@ -465,12 +547,12 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; strategy: structural decomposition
 (define (tick-tock ws)
   (make-world
-   (continuous-paddle (world-paddle ws) (world-direction ws))
-   (check-direction (world-paddle ws) (world-direction ws))
-   (next-fallers (world-paddle ws) (world-fallers ws))
+   (update-paddle (world-paddle ws) (world-fallers ws))
+   (next-fallers (world-paddle ws) (world-fallers ws) (world-tick ws))
    (add-score (world-paddle ws) (world-fallers ws) (world-score ws))
    (add1 (world-tick ws))))
 
+#|
 
 #|----------------------------- click-click function code --------------------------------|#
 ;; subtract-score: number -> number
