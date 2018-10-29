@@ -129,7 +129,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (define MAX-PADDLE-WIDTH (/ WORLD-WIDTH 4))
 
 ;;Min-width paddle
-(define MIN-PADDLE-WIDTH 5)
+(define MIN-PADDLE-WIDTH 20)
 
 
 ;; A HARDNESS-LVL represents the probability of a ball being added each tick. 
@@ -145,10 +145,23 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ; Number of ticks for expand faller  to appear
 (define EXPAND-TICK 30)
 
+#|--------------------- Test Constants -------------------------------------------|#
+(define TEST-FALLERS (list (make-faller FALLER-IMAGE 204 15)
+                           (make-faller EXPAND-FALLER-IMAGE 24 25)
+                           (make-faller FALLER-IMAGE 245 175)
+                           (make-faller SHRINK-FALLER-IMAGE 90 270)
+                           (make-faller FALLER-IMAGE 120 80)))
+
+(define TEST-PADDLE (make-paddle "constant" "right" PADDLE-IMAGE 100))
+(define TEST-WORLD (make-world TEST-PADDLE
+                               TEST-FALLERS
+                               40
+                               300))
+
 #|----------------------------- tick-tock function code ----------------------------------|#
 
 
- #|--------start: code to update paddle every tick (paddle-x, paddle-direction, paddle-stretch, paddle-image)---|#
+#|--------start: code to update paddle every tick (paddle-x, paddle-direction, paddle-stretch, paddle-image)---|#
 
 ;; update-paddle\x: number string -> number
 ;; Every tick moves the `paddle' left of right depending on `direction'.
@@ -175,9 +188,9 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;;THIS UPDATES: PADDLE-DIRECTION
 ;; strategy: strucutral decomposition
 (define (update-paddle\direction paddle-corr direction paddle-image)
-   (cond [(equal? paddle-corr (/ (image-width paddle-image) 2)) "right"]
-         [(equal? paddle-corr (- WORLD-WIDTH (/ (image-width paddle-image) 2))) "left"]
-         [else direction]))
+  (cond [(<= paddle-corr (/ (image-width paddle-image) 2)) "right"]
+        [(>= paddle-corr (- WORLD-WIDTH (/ (image-width paddle-image) 2))) "left"]
+        [else direction]))
 
 (check-expect (update-paddle\direction 25 "left" PADDLE-IMAGE) "right")
 (check-expect (update-paddle\direction (- WORLD-WIDTH 25) "right" PADDLE-IMAGE) "left")
@@ -192,7 +205,9 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
   (let* ([paddle-width (image-width (paddle-image paddle))]
          [paddle-height (image-height (paddle-image paddle))]
          [paddle-width\half (/ paddle-width 2)])
-    (and (<= (- (paddle-x paddle) paddle-width\half) (faller-x faller) (+ (paddle-x paddle) paddle-width\half ))
+    (and (<= (- (paddle-x paddle) paddle-width\half)
+             (faller-x faller)
+             (+ (paddle-x paddle) paddle-width\half ))
          (equal? (faller-y faller) (- WORLD-HEIGHT paddle-height)))))
 
 
@@ -242,25 +257,25 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller EXPAND-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "expand")
+                                           (make-faller FALLER-IMAGE 1 9)
+                                           (make-faller FALLER-IMAGE  2 20)
+                                           (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                           (make-faller EXPAND-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                           (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "expand")
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "shrink")
+                                           (make-faller FALLER-IMAGE 1 9)
+                                           (make-faller FALLER-IMAGE  2 20)
+                                           (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                           (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                           (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "shrink")
 
 (check-expect (update-paddle\stretch (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "constant")
+                                           (make-faller FALLER-IMAGE 1 9)
+                                           (make-faller FALLER-IMAGE  2 20)
+                                           (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                           (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                                           (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)) (make-paddle "constant" "left" PADDLE-IMAGE 8)) "constant")
 
 
 
@@ -269,17 +284,17 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; THIS UPDATE: PADDLE-IMAGE
 ;; strategy: strucutral decomposition
 (define (update-paddle\image paddle-img stretch)
- (let ([paddle-width (image-width paddle-img)])
-   (cond [(string=? stretch "expand")
-          (if (= paddle-width MAX-PADDLE-WIDTH)
-              paddle-img
-              (rectangle (+ paddle-width 1) 12 "solid" "black"))]
-         [(string=? stretch "shrink")
-          (if (= paddle-width MIN-PADDLE-WIDTH)
-              paddle-img
-              (rectangle (- paddle-width 1) 12 "solid" "black"))]
-         [else
-          paddle-img])))
+  (let ([paddle-width (image-width paddle-img)])
+    (cond [(string=? stretch "expand")
+           (if (= paddle-width MAX-PADDLE-WIDTH)
+               paddle-img
+               (rectangle (+ paddle-width 1) 12 "solid" "black"))]
+          [(string=? stretch "shrink")
+           (if (= paddle-width MIN-PADDLE-WIDTH)
+               paddle-img
+               (rectangle (- paddle-width 1) 12 "solid" "black"))]
+          [else
+           paddle-img])))
 
 (check-expect (update-paddle\image (rectangle 50 12 "solid" "black")  "expand")
               (rectangle 51 12 "solid" "black"))
@@ -301,65 +316,65 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; updates the paddle each tick
 ;; THIS UPDATE: PADDLE
 ;; strategy: function composition
-  (define (update-paddle paddle fallers)
-    (make-paddle
-     (update-paddle\stretch fallers paddle)
-     (update-paddle\direction (paddle-x paddle) (paddle-direction paddle) (paddle-image paddle))
-     (update-paddle\image (paddle-image paddle) (paddle-stretch paddle))
-     (update-paddle\x (paddle-x paddle) (paddle-direction paddle))))
+(define (update-paddle paddle fallers)
+  (make-paddle
+   (update-paddle\stretch fallers paddle)
+   (update-paddle\direction (paddle-x paddle) (paddle-direction paddle) (paddle-image paddle))
+   (update-paddle\image (paddle-image paddle) (paddle-stretch paddle))
+   (update-paddle\x (paddle-x paddle) (paddle-direction paddle))))
   
 
 
 ;update x-corrdinate check 
 (check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 8)
-               (list (make-faller FALLER-IMAGE 0 0)
-                     (make-faller FALLER-IMAGE 1 9)
-                     (make-faller FALLER-IMAGE  2 20)
-                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
-                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "constant" "left" PADDLE-IMAGE 7))
+                             (list (make-faller FALLER-IMAGE 0 0)
+                                   (make-faller FALLER-IMAGE 1 9)
+                                   (make-faller FALLER-IMAGE  2 20)
+                                   (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                   (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                                   (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "constant" "left" PADDLE-IMAGE 7))
 
 ;makes sure stretch for "expand"
 (check-expect (update-paddle (make-paddle "expand" "left" PADDLE-IMAGE 8)
-               (list (make-faller FALLER-IMAGE 0 0)
-                     (make-faller FALLER-IMAGE 1 9)
-                     (make-faller FALLER-IMAGE  2 20)
-                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
-                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "expand" "left" (rectangle 51 12 "solid" "black") 7))
+                             (list (make-faller FALLER-IMAGE 0 0)
+                                   (make-faller FALLER-IMAGE 1 9)
+                                   (make-faller FALLER-IMAGE  2 20)
+                                   (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                   (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                                   (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "expand" "left" (rectangle 51 12 "solid" "black") 7))
 
 ;makes sure stretch for "shrink"
 (check-expect (update-paddle (make-paddle "shrink" "left" PADDLE-IMAGE 8)
-               (list (make-faller FALLER-IMAGE 0 0)
-                     (make-faller FALLER-IMAGE 1 9)
-                     (make-faller FALLER-IMAGE  2 20)
-                     (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                     (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
-                     (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "shrink" "left" (rectangle 49 12 "solid" "black") 7))
+                             (list (make-faller FALLER-IMAGE 0 0)
+                                   (make-faller FALLER-IMAGE 1 9)
+                                   (make-faller FALLER-IMAGE  2 20)
+                                   (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                   (make-faller SHRINK-TOUCH-FALLER-IMAGE 8 17)
+                                   (make-faller FALLER-IMAGE 9 WORLD-HEIGHT))) (make-paddle "shrink" "left" (rectangle 49 12 "solid" "black") 7))
 
 
 (check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 8)
                              (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
+                                   (make-faller FALLER-IMAGE 1 9)
+                                   (make-faller FALLER-IMAGE  2 20)
+                                   (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                   (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                   (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "shrink" "left" PADDLE-IMAGE 7))
 
 
 (check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 25)
                              (list (make-faller FALLER-IMAGE 0 0)
-                                 (make-faller FALLER-IMAGE 1 9)
-                                 (make-faller FALLER-IMAGE  2 20)
-                                 (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
-                                 (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
-                                 (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
+                                   (make-faller FALLER-IMAGE 1 9)
+                                   (make-faller FALLER-IMAGE  2 20)
+                                   (make-faller FALLER-IMAGE 7 WORLD-HEIGHT)
+                                   (make-faller SHRINK-FALLER-IMAGE 8 (- WORLD-HEIGHT 12))
+                                   (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "shrink" "right" PADDLE-IMAGE 24))
 
 
   
-         #|--------end: code to update paddle every tick --------|#
+#|--------end: code to update paddle every tick --------|#
 
 
 ;; add-score: paddle list-of-faller number -> number
@@ -406,7 +421,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                (make-faller FALLER-IMAGE 6 WORLD-HEIGHT)
                                (make-faller FALLER-IMAGE 55 WORLD-HEIGHT)) 20) 20)
 
-          #|--------start: code to update faller every tick --------|#
+#|--------start: code to update faller every tick --------|#
 
 ;; create-faller\special: number -> list-of-faller
 ;; Every tick mod EXPAND-TICK = 0  and tick mod SHRINK-TICK = 0, we add a expand ball and shrink
@@ -457,13 +472,13 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
   (cond [(equal? (faller-y faller) (+ 10 WORLD-HEIGHT))
          #false]
         [(and (faller-equal-paddle? paddle faller)
-         (equal? (faller-image faller) FALLER-IMAGE))
+              (equal? (faller-image faller) FALLER-IMAGE))
          (make-faller TOUCH-MAIN-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
         [(and (faller-equal-paddle? paddle faller)
-         (equal? (faller-image faller) EXPAND-FALLER-IMAGE))
+              (equal? (faller-image faller) EXPAND-FALLER-IMAGE))
          (make-faller EXPAND-TOUCH-FALLER-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
         [(and (faller-equal-paddle? paddle faller)
-         (equal? (faller-image faller) SHRINK-FALLER-IMAGE))
+              (equal? (faller-image faller) SHRINK-FALLER-IMAGE))
          (make-faller SHRINK-TOUCH-FALLER-IMAGE (faller-x faller) (+ (faller-y faller) 1))]
         [else
          (make-faller (faller-image faller) (faller-x faller) (+ (faller-y faller) 1))]))
@@ -500,20 +515,20 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; change the faller image. 
 ;; strategy: function decomposition
 (define (update-all-faller paddle fallers)
-   (filter not_false? (map (lambda (f) (update-faller paddle f)) fallers)))
+  (filter not_false? (map (lambda (f) (update-faller paddle f)) fallers)))
 
 (check-expect (update-all-faller (make-paddle "constant" "left" PADDLE-IMAGE 10) (list (make-faller FALLER-IMAGE 0 0)
-                                      (make-faller FALLER-IMAGE 1 1)
-                                      (make-faller FALLER-IMAGE 2 2)
-                                      (make-faller FALLER-IMAGE 3 3)
-                                      (make-faller FALLER-IMAGE 4 4)
-                                      (make-faller FALLER-IMAGE 5 5)
-                                      (make-faller FALLER-IMAGE 6 6)
-                                      (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))
-                                      (make-faller EXPAND-FALLER-IMAGE 11  (- WORLD-HEIGHT 12))
-                                      (make-faller SHRINK-FALLER-IMAGE 12  (- WORLD-HEIGHT 12))
-                                      (make-faller FALLER-IMAGE 8 (+ 10 WORLD-HEIGHT))
-                                      (make-faller FALLER-IMAGE 9 (+ 10 WORLD-HEIGHT))))
+                                                                                       (make-faller FALLER-IMAGE 1 1)
+                                                                                       (make-faller FALLER-IMAGE 2 2)
+                                                                                       (make-faller FALLER-IMAGE 3 3)
+                                                                                       (make-faller FALLER-IMAGE 4 4)
+                                                                                       (make-faller FALLER-IMAGE 5 5)
+                                                                                       (make-faller FALLER-IMAGE 6 6)
+                                                                                       (make-faller FALLER-IMAGE 10  (- WORLD-HEIGHT 12))
+                                                                                       (make-faller EXPAND-FALLER-IMAGE 11  (- WORLD-HEIGHT 12))
+                                                                                       (make-faller SHRINK-FALLER-IMAGE 12  (- WORLD-HEIGHT 12))
+                                                                                       (make-faller FALLER-IMAGE 8 (+ 10 WORLD-HEIGHT))
+                                                                                       (make-faller FALLER-IMAGE 9 (+ 10 WORLD-HEIGHT))))
 
               (list (make-faller FALLER-IMAGE 0 1)
                     (make-faller FALLER-IMAGE 1 2)
@@ -540,7 +555,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 
 
-          #|--------end: code to update faller every tick --------|#
+#|--------end: code to update faller every tick --------|#
 
 ;;tick-tock: World -> World
 ;;  updates `ws' every tick of the clock
@@ -552,7 +567,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
    (add-score (world-paddle ws) (world-fallers ws) (world-score ws))
    (add1 (world-tick ws))))
 
-#|
+
 
 #|----------------------------- click-click function code --------------------------------|#
 ;; subtract-score: number -> number
@@ -569,25 +584,30 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; changes the `direction' whenever the user hits the up arrow
 ;; strategy: structural decomposition
 (define (direction-on-click direction)
-  (cond [(equal? direction "left") "right"]
+  (cond [(string=? direction "left") "right"]
         [else "left"]))
 
 (check-expect (direction-on-click "left") "right")
 (check-expect (direction-on-click "right") "left")
 
 
-;;click-click: World string-> World
-;;  updates `ws' whenever the user hits the up space-bar
-;; strategy: structural decomposition
+;; click-click: World string -> World
+;; updates world state whenever the user hits the spacebar
+;; strategy: struc. decomp.
+
 (define (click-click ws a-key)
-  (cond [(equal? a-key " ") (make-world (world-paddle ws)
-                                                 (direction-on-click (world-direction ws))
-                                                 (world-fallers ws)
-                                                 (subtract-score (world-score ws))
-                                                 (world-tick ws))]
-        [else ws]))
+  (cond
+    [(string=? a-key " ") (make-world
+                           (make-paddle (paddle-stretch (world-paddle ws))
+                                        (direction-on-click (paddle-direction (world-paddle ws)))
+                                        (paddle-image (world-paddle ws))
+                                        (paddle-x (world-paddle ws)))
+                           (world-fallers ws)
+                           (subtract-score (world-score ws))
+                           (world-tick ws))]
+[else ws]))
 
-
+#|
 (check-expect (click-click (make-world 30 "left" (list (make-faller FALLER-IMAGE 0 0)
                                                        (make-faller FALLER-IMAGE 4 50)
                                                        (make-faller FALLER-IMAGE 2 30)) 5 999) " ")
@@ -600,71 +620,60 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                                        (make-faller FALLER-IMAGE 2 30)) 5 999) "t")
               (make-world 30 "left" (list (make-faller FALLER-IMAGE 0 0)
                                            (make-faller FALLER-IMAGE 4 50)
-                                           (make-faller FALLER-IMAGE 2 30)) 5 999))
+                                           (make-faller FALLER-IMAGE 2 30)) 5 999))|#
 
 #|----------------------------- render function code -------------------------------------|#
-;;display-faller: list-of-faller -> image
-;;placing each faller the faller within `fallers' onto the WORLD-CANVAS
-;;Strategy:Structural decomposition
-(define (display-faller fallers)
-  (cond [(empty? fallers) WORLD-CANVAS]
-        [else (place-image (faller-image (first fallers)) (faller-x (first fallers)) (faller-y (first fallers))
-              (display-faller (rest fallers)))]))
-    
+;; display-fallers: list-of-faller -> image
+;; placing each faller onto the WORLD CANVAS
+;; strategy: function comp.
+(define (display-fallers fallers)
+  (foldr (λ (a-faller pic)
+           (place-image (faller-image a-faller)
+                        (faller-x a-faller)
+                        (faller-y a-faller)
+                        pic))
+         WORLD-CANVAS
+         fallers))
 
-                                 
-(check-expect (display-faller '()) WORLD-CANVAS)
-(check-expect (display-faller (list (make-faller TOUCH-MAIN-IMAGE 0 0)
-                                  (make-faller FALLER-IMAGE 4 50)
-                                  (make-faller FALLER-IMAGE 2 30)))
-                            (place-image FALLER-IMAGE 4 50
-                                         (place-image FALLER-IMAGE 2 30
-                                                      (place-image TOUCH-MAIN-IMAGE 0 0 WORLD-CANVAS))))
+(check-expect (display-fallers TEST-FALLERS) (place-images (list FALLER-IMAGE
+                                                                 EXPAND-FALLER-IMAGE
+                                                                 FALLER-IMAGE
+                                                                 SHRINK-FALLER-IMAGE
+                                                                 FALLER-IMAGE)
+                                                           (list (make-posn 204 15)
+                                                                 (make-posn 24 25)
+                                                                 (make-posn 245 175)
+                                                                 (make-posn 90 270)
+                                                                 (make-posn 120 80))
+                                                           WORLD-CANVAS))
 
-;; score->image: number -> image
-;; displays a number as an image.
-;;Strategy:function decomposition
-(define (score->image n)
-  (local
-    ;; monospaced-text : string -> image
-    ;; strategy; Intructor's Code (HW1)
-    [(define (monospaced-text str)
-       (text/font str
-                  36
-                  "black"
-                  "Menlo" 'modern
-                  'normal 'normal #f))]
-    (overlay (monospaced-text (number->string n))
-             (empty-scene (+ (image-width (monospaced-text (number->string n))) 100)
-                          (+ (image-height (monospaced-text (number->string n))) 100)))))
 
-(check-expect (score->image 5) (overlay (text/font "5"
-                                                   36
-                                                   "black"
-                                                   "Menlo" 'modern
-                                                   'normal 'normal #f) (empty-scene 122 142)))
 
-;;display-score: number image -> image
-;;Displays an image of the score beside the canvas
-;;Strategy:Structural decomposition
+(define (monospaced-text str)
+  (text/font str
+             14
+             "white"
+             "Menlo" 'modern
+             'normal 'normal #f))
+           
 (define (display-score score canvas)
-  (beside canvas (score->image score)))
- 
-(check-expect  (display-score 5  WORLD-CANVAS)
-               (beside  WORLD-CANVAS
-                        (overlay (text/font "5"
-                                            36
-                                            "black"
-                                            "Menlo" 'modern
-                                            'normal 'normal #f) (empty-scene 122 142))))
+  (place-image
+   (monospaced-text (number->string score))
+   20 20 canvas))
 
-;;render: World -> image
-;;Renders the world to the canvas. 
-;;Strategy:function decomposition
+(check-expect (display-score 120 (display-fallers TEST-FALLERS)) (place-image
+                                                                  (monospaced-text (number->string 120))
+                                                                  20 20 (display-fallers TEST-FALLERS)))
+;; render: World -> image
+;; renders the world to the canvas
+;; strategy: func. comp.
 (define (render ws)
-  (place-image PADDLE-IMAGE (world-paddle ws) WORLD-HEIGHT
-               (display-score (world-score ws) (display-faller (world-fallers ws)))))
-
+  (place-image (paddle-image
+                (world-paddle ws))
+               (paddle-x (world-paddle ws))
+               (- WORLD-HEIGHT (/ (image-height PADDLE-IMAGE) 2))
+               (display-score (world-score ws) (display-fallers (world-fallers ws)))))
+#|
 (check-expect (render (make-world 30 "left" (list (make-faller TOUCH-MAIN-IMAGE 0 0)
                              (make-faller FALLER-IMAGE 4 50)
                              (make-faller FALLER-IMAGE 2 30)) 5 999))
@@ -680,28 +689,25 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                                 "black"
                                                 "Menlo" 'modern
                                                 'normal 'normal #f) (empty-scene 122 142)))))
+|#
 
-#|
-Here are the sigantures of the three functions:
+#|Here are the sigantures of the three functions:
 
 draw : World -> image
 
 key : World Keypress -> World
 
 tick : World -> World
-|#
-
-
-
-
-
-
-
-
-
-(big-bang (make-world (/ WORLD-WIDTH 2) "right" '() 0 0)
-          [on-tick tick-tock 1/200]
-          [on-key click-click]
-          [to-draw render])
 
 |#
+
+
+
+
+
+(big-bang (make-world (make-paddle "constant" "right" PADDLE-IMAGE (/ WORLD-WIDTH 2))
+                      '() 0 0)
+  [on-tick tick-tock 1/200]
+  [on-key click-click]
+  [to-draw render])
+
