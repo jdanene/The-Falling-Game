@@ -117,7 +117,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 
 ;; Paddle Image
-(define PADDLvvvE-IMAGE (rectangle 50 12 "solid" "black"))
+(define PADDLE-IMAGE (rectangle 50 12 "solid" "black"))
 ;;Width of Canvas
 (define WORLD-WIDTH 300)
 ;; Height of Canvas
