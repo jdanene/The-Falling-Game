@@ -175,9 +175,9 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 #|--------start: code to update paddle every tick (paddle-x, paddle-direction,
                  paddle-stretch, paddle-image)---|#
 
-;; update-paddle\x: number string -> number
+;; update-paddle\x: number string img-> number
 ;; Every tick moves the `paddle' left of right depending on `direction'.
-;; THIS UPDATE: PADDLE-X
+;; UPDATE: PADDLE-X
 ;; strategy: strucutral decomposition
 (define (update-paddle\x paddle-corr direction paddle-image)
   (cond [(string=? direction "left")
@@ -195,18 +195,18 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (check-expect (update-paddle\x WORLD-WIDTH "right" PADDLE-IMAGE) WORLD-WIDTH)
 
 
-;; update-paddle\direction: number string image-> string
+;; update-paddle\direction: number string image-> direction
 ;; if the `paddle' is at the boundary change `direction' to the opposite direction.
-;;THIS UPDATES: PADDLE-DIRECTION
+;; UPDATE: PADDLE-DIRECTION
 ;; strategy: strucutral decomposition
 (define (update-paddle\direction paddle-corr direction paddle-image)
   (cond [(<= (- paddle-corr (get-half-width paddle-image)) 0) "right"]
         [(>= (+ paddle-corr (get-half-width paddle-image)) WORLD-WIDTH) "left"]
         [else direction]))
 
-;;TODO fix tests
-(check-expect (update-paddle\direction 25 "left" PADDLE-IMAGE) "right")
-(check-expect (update-paddle\direction (- WORLD-WIDTH 25) "right" PADDLE-IMAGE) "left")
+
+(check-expect (update-paddle\direction 5 "left" PADDLE-IMAGE) "right")
+(check-expect (update-paddle\direction (- WORLD-WIDTH 5) "right" PADDLE-IMAGE) "left")
 (check-expect (update-paddle\direction  100 "right" PADDLE-IMAGE) "right")
 (check-expect (update-paddle\direction 100 "left" PADDLE-IMAGE) "left")
 
@@ -285,14 +285,11 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; Goes through all the list-of-fallers checks if paddle hits one of the fallers,
 ;; if so updates stretch appropriately. Note the stretch variable changes iff the
 ;; image associated with the faller that was hit is a normal-image. (see definition)
-;; THIS UPDATES: PADDLE-STRETCH
+;; UPDATE: PADDLE-STRETCH
 ;; strategy: abstraction
 (define (update-paddle\stretch fallers paddle)
-  (let* ([stretch-list (map (λ (f)
-                              (check-paddle\stretch paddle f)) fallers)]
-         [stretch-canidates (filter (λ (s)
-                                      (not (string=? s (paddle-stretch paddle))))
-                                    stretch-list)])
+  (let* ([stretch-list (map (λ (f) (check-paddle\stretch paddle f)) fallers)]
+         [stretch-canidates (filter (λ (s) (not (string=? s (paddle-stretch paddle)))) stretch-list)])
     (cond [(empty? stretch-canidates)
            (paddle-stretch paddle)]
           [else
@@ -329,7 +326,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 ;; update-paddle\image: image stretch -> image
 ;; Every tick either shrinks paddle or expands paddle depending on paddle-stretch
-;; THIS UPDATE: PADDLE-IMAGE
+;; UPDATE: PADDLE-IMAGE
 ;; strategy: strucutral decomposition
 (define (update-paddle\image paddle-img stretch)
   (let ([paddle-width (image-width paddle-img)])
@@ -362,7 +359,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 ;; update-paddle: paddle fallers -> paddle
 ;; updates the paddle each tick
-;; THIS UPDATE: PADDLE
+;; UPDATE: PADDLE
 ;; strategy: function composition
 (define (update-paddle paddle fallers)
   (make-paddle
@@ -385,7 +382,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                    (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "constant" "left" PADDLE-IMAGE 49))
 
-;makes sure stretch for "expand"
+;makes sure paddle stretches for "expand"
 (check-expect (update-paddle (make-paddle "expand" "left" PADDLE-IMAGE 50)
                              (list (make-faller FALLER-IMAGE 0 0)
                                    (make-faller FALLER-IMAGE 1 9)
@@ -395,7 +392,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                    (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "expand" "left" (rectangle 51 12 "solid" "black") 49))
 
-;makes sure stretch for "shrink"
+;makes sure paddles stretches for "shrink"
 (check-expect (update-paddle (make-paddle "shrink" "left" PADDLE-IMAGE 50)
                              (list (make-faller FALLER-IMAGE 0 0)
                                    (make-faller FALLER-IMAGE 1 9)
@@ -405,7 +402,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                    (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "shrink" "left" (rectangle 49 12 "solid" "black") 49))
 
-
+; make sure stretch variable updates to "shrink"
 (check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 50)
                              (list (make-faller FALLER-IMAGE 0 0)
                                    (make-faller FALLER-IMAGE 1 9)
@@ -415,7 +412,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                    (make-faller FALLER-IMAGE 9 WORLD-HEIGHT)))
               (make-paddle "shrink" "left" PADDLE-IMAGE 49))
 
-
+; make sure the direction changes
 (check-expect (update-paddle (make-paddle "constant" "left" PADDLE-IMAGE 25)
                              (list (make-faller FALLER-IMAGE 0 0)
                                    (make-faller FALLER-IMAGE 1 9)
@@ -432,9 +429,8 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 
 ;; add-score: paddle list-of-faller number -> number
 ;; Updates the score of the game by cycling through every
-;; faller in `fallers and checking if the faller
-;; hits the paddle.
-;; THIS UPDATES: SCORE
+;; faller in `fallers and checking if the faller hits the paddle.
+;; UPDATE: SCORE
 ;; strategy: structural decomp
 (define (add-score paddle fallers score)
   (local [;; get-score: list-of-faller paddle -> number
@@ -507,21 +503,12 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 (check-random (create-faller\special  7)
               '())
 
-;; not_false?: x -> boolean
-;; returns true if a `val' is not equal to false.
-;; strategy: strucutural decomposition
-(define (not_false? val)
-  (not (equal? val #false)))
-
-(check-expect (not_false? 5) #true)
-(check-expect (not_false? #false) #false)
-
 ;; update-faller: paddle faller -> faller or boolean    
 ;; checks if the ball is at the bottom of the screen [posn-y = WORLD-HEIGHT]. 
 ;; If so then returns #false. Checks if the faller equal paddle if so
 ;; then changes the faller image to TOUCH-MAIN-IMAGE and updates the faller
 ;; position. We are creating this function to apply it to filter. 
-;; strategy: structural decomposition
+;; strategy: struc. decomp.
 (define (update-faller paddle faller)
   (cond [(equal? (- (faller-y faller) 
                     (get-half-height (faller-image faller))) 
@@ -568,13 +555,22 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                [else fallers])]
         [else fallers]))
 
+;; not_false?: x -> boolean
+;; returns true if a `val' is not equal to false.
+;; strategy: struc. decomp.
+(define (not_false? val)
+  (not (equal? val #false)))
+
+(check-expect (not_false? 5) #true)
+(check-expect (not_false? #false) #false)
+
 ;; update-all-faller: paddle list-of-faller -> list-of-faller
 ;; Updates all the fallers positions and images.
 ;; For every faller in list-of-faller, `fallers', we either remove the
 ;; faller from the list if the faller is at the bottom of the screen,
 ;; or update faller-y -> (+ faller-y 1), and if a faller happens to hit the paddle we also
 ;; change the faller image. 
-;; strategy: function decomposition
+;; strategy: function composition
 (define (update-all-faller paddle fallers)
   (filter not_false? (map (lambda (f) (update-faller paddle f)) fallers)))
 
@@ -612,18 +608,15 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; calls add-faller\random to add a normal faller to our list of fallers.
 ;; Then appends the special fallers to this list
 ;; THIS FUNCTION UPDATES: FALLERS
-;; strategy: Function Composiiton. Note we cannot test because of random number.
+;; strategy: Function Composiiton. (Random Variable no tests)
 (define (next-fallers paddle fallers tick)
   (append (add-faller\random (update-all-faller paddle fallers)) (create-faller\special tick)))
-
-
-
 
 #|--------end: code to update faller every tick --------|#
 
 ;;tick-tock: World -> World
-;;  updates `ws' every tick of the clock
-;; strategy: structural decomposition
+;;updates `ws' every tick of the clock
+;; strategy: structural decomposition (Random Variable no tests)
 (define (tick-tock ws)
   (make-world
    (update-paddle (world-paddle ws) (world-fallers ws))
@@ -632,10 +625,12 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
    (add1 (world-tick ws))))
 
 
+;;Possible to-do make tests for random functions. I did this for create-faller\special
+;;but structure for this and the other random function diff so takes some thinking. 
 
 #|----------------------------- click-click function code --------------------------------|#
 ;; subtract-score: number -> number
-;; function to decrease the score if the player hits uparrow key
+;; function to decrease the score if the player hits spacebar 
 ;; strategy: structural decomposition
 (define (subtract-score score)
   (cond [(> score 0) (- score 1)]
@@ -658,7 +653,6 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
 ;; click-click: World string -> World
 ;; updates world state whenever the user hits the spacebar
 ;; strategy: struc. decomp.
-
 (define (click-click ws a-key)
   (cond
     [(string=? a-key " ")
@@ -721,14 +715,19 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                                                                  (make-posn 90 270)
                                                                  (make-posn 120 80))
                                                            WORLD-CANVAS))
-
+;; monospaced-text: string -> image
+;; Outputs text as an image
+;; strategy: Instructor defined function
 (define (monospaced-text str)
   (text/font str
              14
              "white"
              "Menlo" 'modern
              'normal 'normal #f))
-           
+
+;; display-score: number image ->image
+;; Displays the score on the canvas
+;; strategy: struc. decomp
 (define (display-score score canvas)
   (place-image
    (monospaced-text (number->string score))
@@ -738,6 +737,7 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
               (place-image
                (monospaced-text (number->string 120))
                20 20 (display-fallers TEST-FALLERS)))
+
 ;; render: World -> image
 ;; renders the world to the canvas
 ;; strategy: func. comp.
@@ -759,18 +759,8 @@ MOVE THE PADDLE BY PRESSING THE "Space-Bar" KEY
                (display-score (world-score TEST-WORLD)
                               (display-fallers (world-fallers TEST-WORLD)))))
                                          
-
-#|Here are the sigantures of the three functions:
-
-draw : World -> image
-
-key : World Keypress -> World
-
-tick : World -> World
-
-|#
-
-
+#|
+;; big-bang: World -> World
 (big-bang (make-world (make-paddle
                        "constant"
                        "right"
@@ -781,3 +771,4 @@ tick : World -> World
   [on-key click-click]
   [to-draw render])
 
+|#
