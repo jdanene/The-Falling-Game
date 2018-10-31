@@ -58,7 +58,7 @@ time of each function using Big Oh notation.
 (check-expect (merge-sort '(1 2 1 2)) '(1 1 2 2))
 (check-expect (merge-sort '(1 6 3 5 7 3 2)) '(1 2 3 3 5 6 7))
 
-;; merge-two-lists: (make-posn [Listof Number] [Listof Number]) -> [Listof Number]
+;; merge-two-lists: [Listof Number] [Listof Number] -> [Listof Number]
 ;; assemble two sorted lists into one sorted in ascending order
 ;; strategy: structural decomp. and structural recursion
 ;;O(n)
