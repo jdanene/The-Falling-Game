@@ -1,4 +1,4 @@
-# IPD-295-HW-4
+# A very stupid game in Racket
 #### New Rules of the Game
 1. make objects that would be touching the paddle, if they were
    at the bottom of the screen, look different. That is, help the
